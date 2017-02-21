@@ -17,15 +17,15 @@ window.onload = () => {
     }, 100)
 
     var tf1 = new TextField();
-    tf1.text = "Hello";
+    tf1.text = "Zero";
     tf1.x = 40;
     tf1.y = 50;
     tf1.size = 20;
-    tf1.alpha = 1;
+    tf1.alpha = 0.1;
     stage.addChild(tf1);
 
     var tf2 = new TextField();
-    tf2.text = "World";
+    tf2.text = "9";
     tf2.x = 100;
     tf2.y = 50;
     tf2.size = 30;
@@ -38,8 +38,9 @@ window.onload = () => {
     bitmap.image = image;
     bitmap.width = 300;
     bitmap.height = 300;
+    bitmap.x = 10;
     bitmap.y = 70;
-    bitmap.alpha = 0.8;
+    bitmap.alpha = 0.7;
     stage.addChild(bitmap);
 
 };
@@ -47,6 +48,7 @@ window.onload = () => {
 interface Drawable {
 
     draw(context2D: CanvasRenderingContext2D);
+    remove();
 }
 
 class DisplayObject implements Drawable {
@@ -54,28 +56,105 @@ class DisplayObject implements Drawable {
     x = 0;
     y = 0;
     alpha = 1;
+    scaleX = 1;
+    scaleY = 1;
+    rotation = 0;
+    globalAlpha = 1;
+    parent: DisplayObject = null;
+    matrix: math.Matrix = null;
+
+    remove() { };
+
+    constructor() {
+
+        this.matrix = new math.Matrix();
+    }
 
     draw(context2D: CanvasRenderingContext2D) {
 
+        this.matrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);
+        if (this.parent) {
+
+            this.matrix = math.matrixAppendMatrix(this.matrix, this.parent.matrix);
+            this.globalAlpha = this.parent.globalAlpha * this.alpha;
+        } else {
+
+            this.globalAlpha = this.alpha;
+        }
+        context2D.globalAlpha = this.globalAlpha;
+        context2D.setTransform(this.matrix.a, this.matrix.b, this.matrix.c, this.matrix.d, this.matrix.tx, this.matrix.ty);
+
+        this.render(context2D);
+
     }
+
+    render(context2D: CanvasRenderingContext2D) { }
 }
 
 class DisplayObjectContainer implements Drawable {
 
     array: Drawable[] = [];
 
+    x = 0;
+    y = 0;
+    alpha = 1;
+    scaleX = 1;
+    scaleY = 1;
+    rotation = 0;
+    globalAlpha = 1;
+    parent: DisplayObjectContainer = null;
+    matrix = null;
+
+    remove() { };
+
+    constructor() {
+
+        this.matrix = new math.Matrix();
+    }
+
     draw(context2D: CanvasRenderingContext2D) {
 
+        this.matrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);
+        if (this.parent) {
+            
+            this.matrix = math.matrixAppendMatrix(this.matrix, this.parent.matrix);
+            this.globalAlpha = this.parent.globalAlpha * this.alpha;
+        } else {
+
+            this.globalAlpha = this.alpha;
+        }
+
         for (let drawable of this.array) {
+
             drawable.draw(context2D);
         }
     }
 
+    render() { }
+
     addChild(displayObject: DisplayObject) {
 
+        this.removeChild(displayObject);
         this.array.push(displayObject);
+        displayObject.parent = this;
     }
 
+    removeChild(child: Drawable) {
+
+        var tempArr = this.array.concat();
+
+        for (let each of tempArr) {
+
+            if (each == child) {
+
+                var index = this.array.indexOf(child);
+                tempArr.splice(index, 1);
+                this.array = tempArr;
+                child.remove();
+                break;
+            }
+        }
+    }
 }
 
 class TextField extends DisplayObject {
@@ -84,28 +163,28 @@ class TextField extends DisplayObject {
     size = 50;
     font = "Arial";
 
-    draw(context2D: CanvasRenderingContext2D) {
-        context2D.globalAlpha = this.alpha;
-        context2D.font = this.size + "px" + " " + this.font;
-        context2D.fillText(this.text, this.x, this.y);
+    render(context2D:CanvasRenderingContext2D) {
+
+        context2D.font = this.size +"px" + " " + this.font;
+        context2D.fillText(this.text,0,0);
     }
 }
 
 class Bitmap extends DisplayObject {
 
-    image: HTMLImageElement;
+    image: HTMLImageElement = null;
     width: number;
     height: number;
 
-    draw(context2D: CanvasRenderingContext2D) {
-        context2D.globalAlpha = this.alpha;
-        context2D.drawImage(this.image, this.x, this.y, this.width, this.height);
+    constructor() {
+        super();
+    }
+
+    render(context2D:CanvasRenderingContext2D) {
+
+        context2D.drawImage(this.image,0,0,this.width,this.height);          
     }
 }
-
-
-
-
 
 module math {
 

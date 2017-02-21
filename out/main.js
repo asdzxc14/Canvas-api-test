@@ -15,14 +15,14 @@ window.onload = function () {
         stage.draw(context2D);
     }, 100);
     var tf1 = new TextField();
-    tf1.text = "Hello";
+    tf1.text = "Zero";
     tf1.x = 40;
     tf1.y = 50;
     tf1.size = 20;
-    tf1.alpha = 1;
+    tf1.alpha = 0.1;
     stage.addChild(tf1);
     var tf2 = new TextField();
-    tf2.text = "World";
+    tf2.text = "9";
     tf2.x = 100;
     tf2.y = 50;
     tf2.size = 30;
@@ -33,8 +33,9 @@ window.onload = function () {
     bitmap.image = image;
     bitmap.width = 300;
     bitmap.height = 300;
+    bitmap.x = 10;
     bitmap.y = 70;
-    bitmap.alpha = 0.8;
+    bitmap.alpha = 0.7;
     stage.addChild(bitmap);
 };
 var DisplayObject = (function () {
@@ -42,23 +43,80 @@ var DisplayObject = (function () {
         this.x = 0;
         this.y = 0;
         this.alpha = 1;
+        this.scaleX = 1;
+        this.scaleY = 1;
+        this.rotation = 0;
+        this.globalAlpha = 1;
+        this.parent = null;
+        this.matrix = null;
+        this.matrix = new math.Matrix();
     }
+    DisplayObject.prototype.remove = function () { };
+    ;
     DisplayObject.prototype.draw = function (context2D) {
+        this.matrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);
+        if (this.parent) {
+            this.matrix = math.matrixAppendMatrix(this.matrix, this.parent.matrix);
+            this.globalAlpha = this.parent.globalAlpha * this.alpha;
+        }
+        else {
+            this.globalAlpha = this.alpha;
+        }
+        context2D.globalAlpha = this.globalAlpha;
+        context2D.setTransform(this.matrix.a, this.matrix.b, this.matrix.c, this.matrix.d, this.matrix.tx, this.matrix.ty);
+        this.render(context2D);
     };
+    DisplayObject.prototype.render = function (context2D) { };
     return DisplayObject;
 }());
 var DisplayObjectContainer = (function () {
     function DisplayObjectContainer() {
         this.array = [];
+        this.x = 0;
+        this.y = 0;
+        this.alpha = 1;
+        this.scaleX = 1;
+        this.scaleY = 1;
+        this.rotation = 0;
+        this.globalAlpha = 1;
+        this.parent = null;
+        this.matrix = null;
+        this.matrix = new math.Matrix();
     }
+    DisplayObjectContainer.prototype.remove = function () { };
+    ;
     DisplayObjectContainer.prototype.draw = function (context2D) {
+        this.matrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);
+        if (this.parent) {
+            this.matrix = math.matrixAppendMatrix(this.matrix, this.parent.matrix);
+            this.globalAlpha = this.parent.globalAlpha * this.alpha;
+        }
+        else {
+            this.globalAlpha = this.alpha;
+        }
         for (var _i = 0, _a = this.array; _i < _a.length; _i++) {
             var drawable = _a[_i];
             drawable.draw(context2D);
         }
     };
+    DisplayObjectContainer.prototype.render = function () { };
     DisplayObjectContainer.prototype.addChild = function (displayObject) {
+        this.removeChild(displayObject);
         this.array.push(displayObject);
+        displayObject.parent = this;
+    };
+    DisplayObjectContainer.prototype.removeChild = function (child) {
+        var tempArr = this.array.concat();
+        for (var _i = 0, tempArr_1 = tempArr; _i < tempArr_1.length; _i++) {
+            var each = tempArr_1[_i];
+            if (each == child) {
+                var index = this.array.indexOf(child);
+                tempArr.splice(index, 1);
+                this.array = tempArr;
+                child.remove();
+                break;
+            }
+        }
     };
     return DisplayObjectContainer;
 }());
@@ -71,21 +129,21 @@ var TextField = (function (_super) {
         _this.font = "Arial";
         return _this;
     }
-    TextField.prototype.draw = function (context2D) {
-        context2D.globalAlpha = this.alpha;
+    TextField.prototype.render = function (context2D) {
         context2D.font = this.size + "px" + " " + this.font;
-        context2D.fillText(this.text, this.x, this.y);
+        context2D.fillText(this.text, 0, 0);
     };
     return TextField;
 }(DisplayObject));
 var Bitmap = (function (_super) {
     __extends(Bitmap, _super);
     function Bitmap() {
-        return _super !== null && _super.apply(this, arguments) || this;
+        var _this = _super.call(this) || this;
+        _this.image = null;
+        return _this;
     }
-    Bitmap.prototype.draw = function (context2D) {
-        context2D.globalAlpha = this.alpha;
-        context2D.drawImage(this.image, this.x, this.y, this.width, this.height);
+    Bitmap.prototype.render = function (context2D) {
+        context2D.drawImage(this.image, 0, 0, this.width, this.height);
     };
     return Bitmap;
 }(DisplayObject));
