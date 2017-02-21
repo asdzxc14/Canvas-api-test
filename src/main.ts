@@ -21,6 +21,7 @@ window.onload = () => {
     tf1.x = 40;
     tf1.y = 50;
     tf1.size = 20;
+    tf1.alpha = 1;
     stage.addChild(tf1);
 
     var tf2 = new TextField();
@@ -38,6 +39,7 @@ window.onload = () => {
     bitmap.width = 300;
     bitmap.height = 300;
     bitmap.y = 70;
+    bitmap.alpha = 0.8;
     stage.addChild(bitmap);
 
 };
@@ -49,8 +51,9 @@ interface Drawable {
 
 class DisplayObject implements Drawable {
 
-    x: number = 0;
-    y: number = 0;
+    x = 0;
+    y = 0;
+    alpha = 1;
 
     draw(context2D: CanvasRenderingContext2D) {
 
@@ -77,12 +80,12 @@ class DisplayObjectContainer implements Drawable {
 
 class TextField extends DisplayObject {
 
-    text: string = "";
-    size: number = 50;
-    font: string = "Arial";
+    text = "";
+    size = 50;
+    font = "Arial";
 
     draw(context2D: CanvasRenderingContext2D) {
-
+        context2D.globalAlpha = this.alpha;
         context2D.font = this.size + "px" + " " + this.font;
         context2D.fillText(this.text, this.x, this.y);
     }
@@ -95,7 +98,7 @@ class Bitmap extends DisplayObject {
     height: number;
 
     draw(context2D: CanvasRenderingContext2D) {
-        
+        context2D.globalAlpha = this.alpha;
         context2D.drawImage(this.image, this.x, this.y, this.width, this.height);
     }
 }
