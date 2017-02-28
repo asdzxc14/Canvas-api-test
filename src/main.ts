@@ -18,38 +18,204 @@ window.onload = () => {
     }, 100)
 
     var tf1 = new TextField();
-    tf1.text = "Zero";
+    tf1.text = "Zero059";
     tf1.x = 40;
     tf1.y = 50;
-    tf1.size = 20;
+    tf1.size = 50;
     tf1.alpha = 1;
-    stage.addChild(tf1);
 
-    var tf2 = new TextField();
-    tf2.text = "9";
-    tf2.x = 100;
-    tf2.y = 50;
-    tf2.size = 30;
-    stage.addChild(tf2);
+    tf1.addEventListener(TouchEventType.MOUSE_TAP, () => {
+        tf1.text = "love";
+    }, this, false);
 
     var image = document.createElement("img");
     image.src = "DC334.jpg";
 
-    var bitmap = new Bitmap();
-    bitmap.image = image;
-    bitmap.width = 300;
-    bitmap.height = 300;
-    bitmap.x = 10;
-    bitmap.y = 70;
-    bitmap.alpha = 1;
-    stage.addChild(bitmap);
+    image.onload = () => {
 
-};
+        var bitmap = new Bitmap();
+        bitmap.image = image;
+        bitmap.width = 300;
+        bitmap.height = 300;
+        bitmap.x = 10;
+        bitmap.y = 70;
+        bitmap.alpha = 1;
+
+        stage.touchable = true;
+        tf1.touchable = true;
+        bitmap.touchable = true;
+
+        stage.addChild(tf1);
+        stage.addChild(bitmap);
+
+        bitmap.addEventListener(TouchEventType.MOUSE_MOVE, () => {
+            console.log("move");
+            let manager = Event_Manager.getInstance();
+            stage.y += manager.currentY - manager.lastY;
+
+        }, this, false);
+
+    }
+
+    Event_Manager.eventManager = new Event_Manager();
+    Event_Manager.getWindow(window);
+    Event_Manager.getStage(stage);
+
+    Event_Manager.getInstance().onMouseDown();
+    Event_Manager.getInstance().onMouseMove();
+    Event_Manager.getInstance().onMouseUp();
+}
 
 interface Drawable {
 
     draw(context2D: CanvasRenderingContext2D);
-    remove();
+}
+
+var TouchEventType = {
+
+    MOUSE_DOWN: 0,
+    MOUSE_MOVE: 1,
+    MOUSE_UP: 2,
+    MOUSE_TAP: 3
+}
+
+class Event_ {
+
+    type: number = null;
+    ifCapture: boolean = false;
+    eventFunction: Function = null;
+    target: DisplayObject = null;
+
+    public constructor(type: number, eventFunction: Function, target: DisplayObject, ifCapture: boolean) {
+
+        this.type = type;
+        this.eventFunction = eventFunction;
+        this.target = target;
+        this.ifCapture = ifCapture;
+    }
+}
+
+class Event_Manager {
+
+    displayObjcetArray: DisplayObject[] = [];
+    static eventManager: Event_Manager;
+
+    static getInstance() {
+        if (Event_Manager.eventManager == null) {
+
+            Event_Manager.eventManager = new Event_Manager();
+            Event_Manager.eventManager.displayObjcetArray = new Array();
+            return Event_Manager.eventManager;
+
+        } else {
+
+            return Event_Manager.eventManager;
+        }
+    }
+
+    //记录位置
+    currentX: number = null;
+    currentY: number = null;
+    lastX: number = null;
+    lastY: number = null;
+
+    isMouseDown = false;//检测鼠标是否按下
+    hitResult: DisplayObject;//检测是否点到控件
+
+    window: Window = null;
+    stage: DisplayObjectContainer = null;
+
+    static getWindow(window: Window) {
+
+        Event_Manager.getInstance().window = window;
+    }
+
+    static getStage(stage: DisplayObjectContainer) {
+
+        Event_Manager.getInstance().stage = stage;
+    }
+
+    onMouseDown() {
+
+        let manager = Event_Manager.getInstance();
+        manager.window.onmousedown = (e) => {
+
+            manager.isMouseDown = true;
+            manager.displayObjcetArray.splice(0, manager.displayObjcetArray.length);
+            manager.hitResult = manager.stage.hitTest(e.offsetX, e.offsetY);
+            manager.currentX = e.offsetX;
+            manager.currentY = e.offsetY;
+        }
+    }
+
+    onMouseMove() {
+
+        let manager = Event_Manager.getInstance();
+
+        manager.window.onmousemove = (e) => {
+
+            if (manager.currentX == null) {
+
+                manager.currentX = e.offsetX;
+                manager.currentY = e.offsetY;
+                manager.lastX = manager.currentX;
+                manager.lastY = manager.currentY;
+            } else {
+
+                manager.lastX = manager.currentX;
+                manager.lastY = manager.currentY;
+                manager.currentX = e.offsetX;
+                manager.currentY = e.offsetY;
+            }
+
+            if (manager.isMouseDown) {
+
+                for (let i = 0; i < manager.displayObjcetArray.length; i++) {
+
+                    for (let event of manager.displayObjcetArray[i].eventList) {
+
+                        if (event.type == TouchEventType.MOUSE_MOVE && event.ifCapture) {
+
+                            event.eventFunction(e);
+                        }
+                    }
+                }
+
+                for (let i = (manager.displayObjcetArray.length - 1); i >= 0; i--) {
+
+                    for (let event of manager.displayObjcetArray[i].eventList) {
+
+                        if (event.type == TouchEventType.MOUSE_MOVE && !event.ifCapture) {
+
+                            event.eventFunction(e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    onMouseUp() {
+
+        let manager = Event_Manager.getInstance();
+        manager.window.onmouseup = (e) => {
+
+            manager.isMouseDown = false;
+            manager.displayObjcetArray.splice(0, manager.displayObjcetArray.length);
+            let newHitRusult = manager.stage.hitTest(e.offsetX, e.offsetY)
+
+            for (let i = manager.displayObjcetArray.length - 1; i >= 0; i--) {
+
+                for (let event of manager.displayObjcetArray[i].eventList) {
+
+                    if (event.type == TouchEventType.MOUSE_TAP && newHitRusult == manager.hitResult) {
+                        console.log("mouse up");
+                        event.eventFunction(e);
+                    }
+                }
+            }
+        }
+    }
 }
 
 class DisplayObject implements Drawable {
@@ -64,7 +230,13 @@ class DisplayObject implements Drawable {
     parent: DisplayObject = null;
     matrix: math.Matrix = null;
 
-    remove() { };
+    eventList: Event_[] = [];
+
+    touchable: boolean = false;
+
+    removeParent() {
+        this.parent = null;
+    }
 
     constructor() {
 
@@ -90,27 +262,25 @@ class DisplayObject implements Drawable {
     }
 
     render(context2D: CanvasRenderingContext2D) { }
+
+    hitTest(x: number, y: number): DisplayObject {
+
+        return null;
+    }
+
+    addEventListener(type: number, eventFunction: Function, target: DisplayObject, ifCapture: boolean) {
+
+        let e = new Event_(type, eventFunction, target, ifCapture);
+        this.eventList.push(e);
+    }
 }
 
-class DisplayObjectContainer implements Drawable {
+class DisplayObjectContainer extends DisplayObject {
 
-    array: Drawable[] = [];
-
-    x = 0;
-    y = 0;
-    alpha = 1;
-    scaleX = 1;
-    scaleY = 1;
-    rotation = 0;
-    globalAlpha = 1;
-    parent: DisplayObjectContainer = null;
-    matrix = null;
-
-    remove() { };
+    array: DisplayObject[] = [];
 
     constructor() {
-
-        this.matrix = new math.Matrix();
+        super();
     }
 
     draw(context2D: CanvasRenderingContext2D) {
@@ -133,6 +303,28 @@ class DisplayObjectContainer implements Drawable {
 
     render() { }
 
+    hitTest(x, y): DisplayObject {
+
+        if (!this.touchable) {
+
+            return null;
+        }
+
+        for (var i = this.array.length - 1; i >= 0; i--) {
+
+            var child = this.array[i];
+            var pointBaseOnChild = math.pointAppendMatrix(new math.Point(x, y), math.invertMatrix(child.matrix));
+            var hitTestResult = child.hitTest(pointBaseOnChild.x, pointBaseOnChild.y);
+
+            if (hitTestResult) {
+
+                return hitTestResult;
+            }
+        }
+
+        return null;
+    }
+
     addChild(displayObject: DisplayObject) {
 
         this.removeChild(displayObject);
@@ -140,7 +332,7 @@ class DisplayObjectContainer implements Drawable {
         displayObject.parent = this;
     }
 
-    removeChild(child: Drawable) {
+    removeChild(child: DisplayObject) {
 
         var tempArr = this.array.concat();
 
@@ -151,7 +343,7 @@ class DisplayObjectContainer implements Drawable {
                 var index = this.array.indexOf(child);
                 tempArr.splice(index, 1);
                 this.array = tempArr;
-                child.remove();
+                child.removeParent();
                 break;
             }
         }
@@ -163,11 +355,39 @@ class TextField extends DisplayObject {
     text = "";
     size = 50;
     font = "Arial";
+    rect: math.Rectangle = null;
 
     render(context2D: CanvasRenderingContext2D) {
 
+        this.rect = new math.Rectangle(0, -this.size, this.text.length * this.size / 2, this.size);
         context2D.font = this.size + "px" + " " + this.font;
         context2D.fillText(this.text, 0, 0);
+    }
+
+    hitTest(x, y): DisplayObject {
+
+        if (!this.touchable) {
+
+            return null;
+        }
+
+        if (this.rect == null) {
+
+            this.rect = new math.Rectangle(0, -this.size, this.text.length * this.size / 2, this.size);
+        }
+        var hitPoint = new math.Point(x, y);
+
+        if (this.rect.isPointInRectangle(hitPoint)) {
+
+            if (this.eventList.length != 0) {
+
+                Event_Manager.getInstance().displayObjcetArray.push(this);
+            }
+            return this;
+        } else {
+
+            return null;
+        }
     }
 }
 
@@ -176,6 +396,7 @@ class Bitmap extends DisplayObject {
     image: HTMLImageElement = null;
     width: number;
     height: number;
+    rect: math.Rectangle = null;
 
     constructor() {
         super();
@@ -184,6 +405,29 @@ class Bitmap extends DisplayObject {
     render(context2D: CanvasRenderingContext2D) {
 
         context2D.drawImage(this.image, 0, 0, this.width, this.height);
+    }
+
+    hitTest(x, y): DisplayObject {
+
+        if (!this.touchable) {
+
+            return null;
+        }
+
+        this.rect = new math.Rectangle(0, 0, this.width, this.height);
+        var localHitPoint = new math.Point(x, y);
+
+        if (this.rect.isPointInRectangle(localHitPoint)) {
+
+            if (this.eventList.length != 0) {
+
+                Event_Manager.getInstance().displayObjcetArray.push(this);
+            }
+            return this;
+        } else {
+
+            return null;
+        }
     }
 }
 
@@ -206,7 +450,7 @@ module math {
         width = 1;
         height = 1;
 
-        public constructor(x,y,width,height){
+        public constructor(x, y, width, height) {
 
             this.x = x;
             this.y = y;
