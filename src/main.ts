@@ -10,9 +10,10 @@ window.onload = () => {
     var stage = new DisplayObjectContainer();
 
     setInterval(() => {
-
+        context2D.save();
         context2D.clearRect(0, 0, canvas.width, canvas.height);//在显示图片之前清屏
         stage.draw(context2D);
+        context2D.restore();
 
     }, 100)
 
@@ -21,7 +22,7 @@ window.onload = () => {
     tf1.x = 40;
     tf1.y = 50;
     tf1.size = 20;
-    tf1.alpha = 0.1;
+    tf1.alpha = 1;
     stage.addChild(tf1);
 
     var tf2 = new TextField();
@@ -40,7 +41,7 @@ window.onload = () => {
     bitmap.height = 300;
     bitmap.x = 10;
     bitmap.y = 70;
-    bitmap.alpha = 0.7;
+    bitmap.alpha = 1;
     stage.addChild(bitmap);
 
 };
@@ -116,7 +117,7 @@ class DisplayObjectContainer implements Drawable {
 
         this.matrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);
         if (this.parent) {
-            
+
             this.matrix = math.matrixAppendMatrix(this.matrix, this.parent.matrix);
             this.globalAlpha = this.parent.globalAlpha * this.alpha;
         } else {
@@ -163,10 +164,10 @@ class TextField extends DisplayObject {
     size = 50;
     font = "Arial";
 
-    render(context2D:CanvasRenderingContext2D) {
+    render(context2D: CanvasRenderingContext2D) {
 
-        context2D.font = this.size +"px" + " " + this.font;
-        context2D.fillText(this.text,0,0);
+        context2D.font = this.size + "px" + " " + this.font;
+        context2D.fillText(this.text, 0, 0);
     }
 }
 
@@ -180,9 +181,9 @@ class Bitmap extends DisplayObject {
         super();
     }
 
-    render(context2D:CanvasRenderingContext2D) {
+    render(context2D: CanvasRenderingContext2D) {
 
-        context2D.drawImage(this.image,0,0,this.width,this.height);          
+        context2D.drawImage(this.image, 0, 0, this.width, this.height);
     }
 }
 
@@ -195,6 +196,32 @@ module math {
         constructor(x: number, y: number) {
             this.x = x;
             this.y = y;
+        }
+    }
+
+    export class Rectangle {
+
+        x = 0;
+        y = 0;
+        width = 1;
+        height = 1;
+
+        public constructor(x,y,width,height){
+
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+
+        isPointInRectangle(point: Point) {
+            let rect = this;
+            if (point.x < rect.width + rect.x &&
+                point.y < rect.height + rect.y &&
+                point.x > rect.x &&
+                point.y > rect.y) {
+                return true;
+            }
         }
     }
 

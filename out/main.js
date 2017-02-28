@@ -11,15 +11,17 @@ window.onload = function () {
     //0   0   1 
     var stage = new DisplayObjectContainer();
     setInterval(function () {
+        context2D.save();
         context2D.clearRect(0, 0, canvas.width, canvas.height); //在显示图片之前清屏
         stage.draw(context2D);
+        context2D.restore();
     }, 100);
     var tf1 = new TextField();
     tf1.text = "Zero";
     tf1.x = 40;
     tf1.y = 50;
     tf1.size = 20;
-    tf1.alpha = 0.1;
+    tf1.alpha = 1;
     stage.addChild(tf1);
     var tf2 = new TextField();
     tf2.text = "9";
@@ -35,7 +37,7 @@ window.onload = function () {
     bitmap.height = 300;
     bitmap.x = 10;
     bitmap.y = 70;
-    bitmap.alpha = 0.7;
+    bitmap.alpha = 1;
     stage.addChild(bitmap);
 };
 var DisplayObject = (function () {
@@ -157,6 +159,29 @@ var math;
         return Point;
     }());
     math.Point = Point;
+    var Rectangle = (function () {
+        function Rectangle(x, y, width, height) {
+            this.x = 0;
+            this.y = 0;
+            this.width = 1;
+            this.height = 1;
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+        Rectangle.prototype.isPointInRectangle = function (point) {
+            var rect = this;
+            if (point.x < rect.width + rect.x &&
+                point.y < rect.height + rect.y &&
+                point.x > rect.x &&
+                point.y > rect.y) {
+                return true;
+            }
+        };
+        return Rectangle;
+    }());
+    math.Rectangle = Rectangle;
     function pointAppendMatrix(point, m) {
         var x = m.a * point.x + m.c * point.y + m.tx;
         var y = m.b * point.x + m.d * point.y + m.ty;
