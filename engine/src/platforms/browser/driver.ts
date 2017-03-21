@@ -5,6 +5,7 @@ namespace engine {
         stage.setWidth(canvas.width);
         stage.setHeight(canvas.height);
         let context2D = canvas.getContext("2d");
+        let renderer = new CanvasRenderer(stage,context2D);
         var currentTarget;                      //鼠标点击时当前的对象
         var startTarget;                        //mouseDown时的对象
         var isMouseDown = false;
@@ -15,9 +16,10 @@ namespace engine {
             let now = Date.now();
             let deltaTime = now - lastNow;
             Ticker.getInstance().notify(deltaTime);
-            context2D.clearRect(0, 0, 400, 400);
+            context2D.clearRect(0, 0, stage.getWidth(), stage.getHeight());
             context2D.save();
-            stage.draw(context2D);
+            stage.update();
+            renderer.render();
             context2D.restore();
             lastNow = now;
             window.requestAnimationFrame(frameHandler);
@@ -81,6 +83,51 @@ namespace engine {
 
         return stage;
 
+    }
+
+    class CanvasRenderer{
+        constructor(private stage: DisplayObjectContainer, private context2D: CanvasRenderingContext2D) {
+
+        }
+
+        render() {
+            let stage = this.stage;
+            let context2D = this.context2D;
+            this.renderContainer(stage);
+        }
+
+        renderContainer(container: DisplayObjectContainer) {
+            for (let child of container.childArray) {
+                let context2D = this.context2D;
+                context2D.globalAlpha = child.globalAlpha;
+                let m = child.globalMatrix;
+                context2D.setTransform(m.a, m.b, m.c, m.d, m.tx, m.ty);
+
+                if (child.type == "Bitmap") {
+                    this.renderBitmap(child as Bitmap);
+                }
+                else if (child.type == "TextField") {
+                    this.renderTextField(child as TextField);
+                }
+                else if (child.type == "DisplayObjectContainer") {
+                    this.renderContainer(child as DisplayObjectContainer);
+                }
+            }
+        }
+
+        renderBitmap(bitmap : Bitmap){
+            if(bitmap.texture){
+                bitmap.normalWidth = bitmap.texture.width;
+                bitmap.normalHeight = bitmap.texture.height;
+                this.context2D.drawImage(bitmap.texture,0,0);
+            }
+        }
+
+        renderTextField(textField : TextField){
+            this.context2D.fillStyle = textField.textColor;
+            this.context2D.font = textField.textType;
+            this.context2D.fillText(textField.text,0,0 + textField.size);
+        }
     }
 
 

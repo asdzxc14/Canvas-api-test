@@ -13,12 +13,13 @@ export type MovieClipFrameData = {
 
 
 export interface Drawable{
-    render(context2D : CanvasRenderingContext2D);
+    update(context2D : CanvasRenderingContext2D);
 }
 
 
 
 export abstract class DisplayObject implements Drawable{
+    type = "DisplayObject";
     parent : DisplayObjectContainer;
     alpha = 1;
     globalAlpha = 1;
@@ -33,8 +34,12 @@ export abstract class DisplayObject implements Drawable{
     protected width = 1;
     protected height = 1;
     touchEnabled = true;
-    protected normalWidth = -1;
-    protected normalHeight = -1;
+    public normalWidth = -1;
+    public normalHeight = -1;
+
+    constructor(type : string){
+        this.type = type;
+    }
 
     setWidth(width : number){
         this.width = width;
@@ -57,7 +62,7 @@ export abstract class DisplayObject implements Drawable{
         return this.height;
     }
 
-    draw(context2D : CanvasRenderingContext2D){
+    update(){
 
         if(this.normalWidth > 0){
             this.scaleX = this.width / this.normalWidth;
@@ -76,9 +81,9 @@ export abstract class DisplayObject implements Drawable{
             this.globalAlpha = this.alpha;
             this.globalMatrix = this.localMatrix;
         }
-        context2D.globalAlpha = this.globalAlpha;
-        context2D.setTransform(this.globalMatrix.a,this.globalMatrix.b,this.globalMatrix.c,this.globalMatrix.d,this.globalMatrix.tx,this.globalMatrix.ty);
-        this.render(context2D);
+        // context2D.globalAlpha = this.globalAlpha;
+        // context2D.setTransform(this.globalMatrix.a,this.globalMatrix.b,this.globalMatrix.c,this.globalMatrix.d,this.globalMatrix.tx,this.globalMatrix.ty);
+        // this.render(context2D);
     }
 
     addEventListener(type : TouchEventsType,touchFunction : Function,object : any,ifCapture? : boolean,priority?: number){
@@ -86,13 +91,24 @@ export abstract class DisplayObject implements Drawable{
         this.listeners.push(touchEvent);
     }
 
-    abstract render(context2D : CanvasRenderingContext2D)
+    //abstract render(context2D : CanvasRenderingContext2D)
 
     abstract hitTest(x : number,y : number):DisplayObject
 }
 
  export class DisplayObjectContainer extends DisplayObject{
     childArray : DisplayObject[] = [];
+
+    constructor(){
+        super("DisplayObjectContainer");
+    }
+
+    update(){
+        super.update();
+        for(let child of this.childArray){
+            child.update();
+        }
+    }
 
     addChild(child : DisplayObject){
         this.childArray.push(child);
@@ -109,11 +125,11 @@ export abstract class DisplayObject implements Drawable{
         this.childArray.splice(i);
     }
 
-    render(context2D : CanvasRenderingContext2D){
-        for(let displayObject of this.childArray){
-            displayObject.draw(context2D);
-        }
-    }
+    // render(context2D : CanvasRenderingContext2D){
+    //     for(let displayObject of this.childArray){
+    //         displayObject.draw(context2D);
+    //     }
+    // }
 
     hitTest(x : number,y: number) : DisplayObject{
     if(this.touchEnabled){
@@ -168,16 +184,16 @@ export class TextField extends DisplayObject{
     textType = "18px Arial";
 
     constructor(){
-        super();
+        super("TextField");
     }
     
 
 
-    render(context2D : CanvasRenderingContext2D){
-        context2D.fillStyle = this.textColor;
-        context2D.font = this.textType;
-        context2D.fillText(this.text,0,0 + this.size);
-    }
+    // render(context2D : CanvasRenderingContext2D){
+    //     context2D.fillStyle = this.textColor;
+    //     context2D.font = this.textType;
+    //     context2D.fillText(this.text,0,0 + this.size);
+    // }
 
     hitTest(x : number,y :number){
         if(this.touchEnabled){
@@ -229,7 +245,7 @@ export class Bitmap extends DisplayObject{
 
 
     constructor(imageID? : string){
-        super();
+        super("Bitmap");
         this.imageID = imageID;
         // this.texture = new Image();
         // this.texture.src = this.imageID;
@@ -251,18 +267,19 @@ export class Bitmap extends DisplayObject{
         })
     }
 
-    render(context2D : CanvasRenderingContext2D){
-        if(this.texture){
-            this.normalWidth = this.texture.width;
-            this.normalHeight = this.texture.height;
-            context2D.drawImage(this.texture,0,0);
-        }
-        // else{
-        //     this.texture.onload = () =>{
-        //         context2D.drawImage(this.texture,0,0);
-        //     }
-        // }
-    }
+
+    // render(context2D : CanvasRenderingContext2D){
+    //     if(this.texture){
+    //         this.normalWidth = this.texture.width;
+    //         this.normalHeight = this.texture.height;
+    //         context2D.drawImage(this.texture,0,0);
+    //     }
+    //     // else{
+    //     //     this.texture.onload = () =>{
+    //     //         context2D.drawImage(this.texture,0,0);
+    //     //     }
+    //     // }
+    // }
 
     hitTest(x : number,y :number){
         if(this.touchEnabled){
